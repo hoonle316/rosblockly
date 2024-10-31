@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS Web Dashboard</title>
+    <!-- Blockly 라이브러리 -->
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <!-- ROSLib 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 네비게이션 바 스타일 */
+        .navbar {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .navbar a {
+            color: white;
+            padding: 0 15px;
+            text-decoration: none;
+            font-size: 18px;
+        }
+
+        .navbar a:hover {
+            background-color: #575757;
+        }
+
+        /* 컨텐츠 영역 */
+        .main-content {
+            display: flex;
+            height: 100%;
+        }
+
+        #blocklyDiv {
+            height: 100%;
+            width: 50%;
+            border-right: 1px solid #ccc;
+        }
+
+        #previewDiv {
+            height: 100%;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #codeDiv {
+            width: 90%;
+            height: 200px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        iframe {
+            width: 90%;
+            height: 60%;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 네비게이션 바 -->
+    <div class="navbar">
+        <a href="#home">Home</a>
+        <a href="#simulation">Simulation</a>
+        <a href="#code">Generated Code</a>
+        <a href="#about">About</a>
+    </div>
+
+    <!-- Blockly 블록 코딩 영역 및 코드 미리보기 -->
+    <div class="main-content">
+        <!-- Blockly 블록 코딩 영역 -->
+        <div id="blocklyDiv"></div>
+
+        <!-- 미리보기 및 코드 생성 영역 -->
+        <div id="previewDiv">
+            <h2>Simulation Preview</h2>
+            <iframe src="http://localhost:8080"></iframe>
+
+            <h2>Generated Code</h2>
+            <div id="codeDiv"></div>
+        </div>
+    </div>
+
+    <script>
+        // Blockly 초기화 및 블록 설정
+        var workspace = Blockly.inject('blocklyDiv', {
+            toolbox: `<xml>
+                <block type="controls_if"></block>
+                <block type="logic_compare"></block>
+                <block type="math_number"></block>
+                <!-- 다른 블록들 추가 가능 -->
+            </xml>`
+        });
+
+        // ROSBridge WebSocket 연결 설정
+        const ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9090'  // ROSBridge WebSocket 서버 주소
+        });
+
+        ros.on('connection', function() {
+            console.log('Connected to ROSBridge');
+        });
+
+        ros.on('error', function(error) {
+            console.log('Error connecting to ROSBridge:', error);
+        });
+
+        ros.on('close', function() {
+            console.log('Connection to ROSBridge closed.');
+        });
+
+        // Blockly에서 코드 생성 및 업데이트
+        function updateCode() {
+            var code = Blockly.JavaScript.workspaceToCode(workspace); // JavaScript 코드 생성
+            document.getElementById('codeDiv').textContent = code;  // 코드 미리보기 영역 업데이트
+        }
+
+        // 블록이 변경될 때마다 코드 업데이트
+        workspace.addChangeListener(updateCode);
+
+        // 예시: 특정 블록 실행 후 ROS 명령 전송 로직
+        function sendRosMessage() {
+            var topic = new ROSLIB.Topic({
+                ros: ros,
+                name: '/example_topic',
+                messageType: 'std_msgs/String'
+            });
+
+            var message = new ROSLIB.Message({
+                data: 'Hello, ROS from Blockly!'
+            });
+
+            topic.publish(message);
+        }
+
+    </script>
+</body>
+</html>

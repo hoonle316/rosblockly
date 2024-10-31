@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS Web Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .connection-form {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            font-weight: bold;
+            color: green;
+        }
+
+        .status.error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="connection-form">
+        <input type="text" id="rosbridge-address" placeholder="ws://localhost:9090" value="ws://localhost:9090">
+        <button onclick="connectToROS()">Connect</button>
+    </div>
+
+    <div id="status" class="status">Not connected</div>
+
+    <script>
+        let ros;
+
+        function connectToROS() {
+            const rosbridgeAddress = document.getElementById('rosbridge-address').value;
+            ros = new ROSLIB.Ros({
+                url: rosbridgeAddress
+            });
+
+            const statusElement = document.getElementById('status');
+
+            ros.on('connection', function () {
+                console.log('Connected to rosbridge server.');
+                statusElement.textContent = 'Connected to rosbridge server.';
+                statusElement.classList.remove('error');
+                window.location.href = 'dashboard.html'
+            });
+
+            ros.on('error', function (error) {
+                console.error('Error connecting to rosbridge server:', error);
+                statusElement.textContent = 'Error connecting to rosbridge server. Check the address and try again.';
+                statusElement.classList.add('error');
+            });
+
+            ros.on('close', function () {
+                console.log('Connection to rosbridge server closed.');
+                statusElement.textContent = 'Connection to rosbridge server closed.';
+                statusElement.classList.add('error');
+            });
+        }
+    </script>
+</body>
+
+</html>
